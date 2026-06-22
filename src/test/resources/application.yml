@@ -1,0 +1,15 @@
+quarkus:
+  datasource:
+    db-kind: postgresql
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/test_db
+  hibernate-orm:
+    database:
+      generation: drop-and-create
+
+# Override MCP config for tests
+causa:
+  mcp:
+    kubernetes:
+      endpoint: http://localhost:8080
+      timeout-ms: 5000

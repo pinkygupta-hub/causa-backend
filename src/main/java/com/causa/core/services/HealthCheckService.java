@@ -64,7 +64,7 @@ public class HealthCheckService {
             DataSource dataSource,
             @ConfigProperty(name = "quarkus.application.version") String applicationVersion,
             @ConfigProperty(name = "causa.mcp.kubernetes.endpoint") String mcpK8sEndpoint,
-            @ConfigProperty(name = "causa.mcp.kubernetes.health-path") String mcpK8sHealthPath,
+            @ConfigProperty(name = "causa.mcp.kubernetes.health-path", defaultValue = "/healthz") String mcpK8sHealthPath,
             @ConfigProperty(name = "causa.mcp.kubernetes.timeout-ms") int mcpK8sTimeout,
             LangChainPromptSender llmPromptSender,
             LLMConfig llmConfig) {
