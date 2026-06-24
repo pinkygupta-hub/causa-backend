@@ -84,8 +84,7 @@ public final class LLMConstants {
         public static final String OUTPUT_MARKER = "---output---";
 
         // Environment variables
-        public static final String ENV_API_KEY = "BOBSHELL_API_KEY";
-
+        public static final String ENV_API_KEY = "BOBSHELL_API_KEY";  // BOB Shell internally uses this env var
         // Health check
         public static final String VERSION_FLAG = "--version";
         public static final int VERSION_CHECK_TIMEOUT_SECONDS = 5;
