@@ -3,6 +3,7 @@ package com.causa.core.services.impl;
 import com.causa.common.constants.DiagnosticConstants.DiagnosticStatus;
 import com.causa.common.logging.CausaLogger;
 import com.causa.common.logging.LogMessages;
+import com.causa.config.LLMConfig;
 import com.causa.core.domain.Alert;
 import com.causa.core.domain.Diagnostic;
 import com.causa.core.domain.LLMRequest;
@@ -38,17 +39,20 @@ public class DiagnosticServiceImpl implements DiagnosticService {
     private final McpContextCollector mcpContextCollector;
     private final RcaPromptBuilder rcaPromptBuilder;
     private final PromptSender promptSender;
+    private final LLMConfig llmConfig;
     private final ObjectMapper objectMapper;
 
     @Inject
     public DiagnosticServiceImpl(DiagnosticRepository diagnosticRepository,
                                   McpContextCollector mcpContextCollector,
                                   RcaPromptBuilder rcaPromptBuilder,
-                                  PromptSender promptSender) {
+                                  PromptSender promptSender,
+                                  LLMConfig llmConfig) {
         this.diagnosticRepository = diagnosticRepository;
         this.mcpContextCollector = mcpContextCollector;
         this.rcaPromptBuilder = rcaPromptBuilder;
         this.promptSender = promptSender;
+        this.llmConfig = llmConfig;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -195,8 +199,8 @@ public class DiagnosticServiceImpl implements DiagnosticService {
             // Build LLM request
             LLMRequest llmRequest = LLMRequest.builder(userPrompt)
                 .systemPrompt(systemPrompt)
-                .temperature(0.1)  // Low temperature for deterministic RCA
-                .maxTokens(4096)
+                .temperature(llmConfig.temperature())
+                .maxTokens(llmConfig.maxTokens())
                 .build();
 
             // Call the LLM (works with both LangChain and BobShell)
