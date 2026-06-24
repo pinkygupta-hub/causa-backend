@@ -345,3 +345,36 @@ Get the context sent to LLM
 
 oc logs -n pinky -l app.kubernetes.io/name=causa-backend --tail=50 | grep -E "test-container|RCA|LLM"
    Check recent logs for RCA processing
+
+
+   steps to test rca -
+
+   build image n push
+
+   oc apply -k /tmp/causa-deploy-pinky/
+
+   or Let me directly patch the deployment instead of using kustomize:
+oc set image deployment/causa-backend -n pinky causa-backend=quay.io/pingupta/irb:rca-test-20260624-130129
+
+oc rollout status deployment/causa-backend -n pinky --timeout=5m
+
+ROUTE_URL="causa-backend-pinky.apps.cluster-ns4r6.ns4r6.sandbox151.opentlc.com"
+
+   echo "Triggering RCA test..."
+   curl -k -X POST "https://$ROUTE_URL/webhook/alertmanager" \                                                                                                                                      
+     -H "Content-Type: application/json" \
+     -d '{
+       "alerts": [{
+         "status": "firing",
+         "labels": {
+           "alertname": "HighMemoryUsage",
+           "severity": "critical",
+           "pod": "heap-oom-prom-5785ff66b9-pt87l",
+           "namespace": "chaos-test",
+           "container": "heap-oom-prom"
+         },
+         "annotations": {
+           "summary": "Test RCA Generation - All signals present"
+         }
+       }]
+     }'

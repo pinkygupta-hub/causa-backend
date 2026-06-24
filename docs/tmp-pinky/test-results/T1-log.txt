@@ -1,0 +1,225 @@
+## PROMETHEUS METRICS
+CPU Usage: 0.071/0.500 cores
+MEMORY Usage: 478/512 MiB
+Collected at time of alert.
+
+## KRUIZE RECOMMENDATIONS
+Performance Recommendations:
+  resources:
+    requests:
+      cpu: 0.435 # +0.185
+      memory: 948 Mi # +692 Mi
+    limits:
+      cpu: 0.435 # -0.065
+      memory: 948 Mi # +436 Mi
+
+## POD LOGS
+Pod: heap-oom-prom-5785ff66b9-dfww8 | Container: heap-oom-prom
+2026-06-18 09:17:08,004 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 95000 targets. Current registry size=95000
+2026-06-18 09:17:13,005 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 100000 targets. Current registry size=100000
+2026-06-18 09:17:18,006 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 105000 targets. Current registry size=105000
+2026-06-18 09:17:23,007 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 110000 targets. Current registry size=110000
+2026-06-18 09:17:28,008 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 115000 targets. Current registry size=115000
+
+## JFR CONTAINER ANALYSIS
+{
+  "status": "RECENT_ARCHIVED_EXISTS",
+  "events": {
+    "jdk.ContainerConfiguration": {
+      "row_count": 1,
+      "rows": [{
+        "containerType": "cgroupv2",
+        "cpuQuota": "50000000",
+        "effectiveCpuCount": "1",
+        "memoryLimit": "536870912",
+        "hostTotalMemory": "65993228288"
+      }]
+    }
+  }
+}
+
+## JFR GC ANALYSIS
+{
+  "events": {
+    "jdk.GCHeapSummary": {
+      "row_count": 2,
+      "rows": [
+        {"heapUsed": "21360344", "when": "Before GC"},
+        {"heapUsed": "17271584", "when": "After GC"}
+      ]
+    },
+    "jdk.GCHeapMemoryPoolUsage": {
+      "row_count": 4,
+      "rows": [
+        {"name": "Eden Space", "used": "4088760", "committed": "114688000", "max": "114688000"},
+        {"name": "Survivor Space", "used": "0", "committed": "14680064", "max": "14680064"},
+        {"name": "Tenured Gen", "used": "17271584", "committed": "286654464", "max": "286654464"}
+      ]
+    },
+    "jdk.GarbageCollection": {
+      "row_count": 1,
+      "rows": [
+        {"name": "DefNew", "duration": "3292885", "cause": "Allocation Failure", "longestPause": "3292885"}
+      ]
+    }
+  }
+}
+
+## JFR MEMORY ANALYSIS
+{
+  "events": {
+    "jdk.JavaMemoryUsage": {
+      "row_count": 3,
+      "rows": [
+        {"memoryType": "Heap", "used": "17271584", "committed": "416022528", "max": "416022528"},
+        {"memoryType": "Non-heap", "used": "50217176", "committed": "53600256", "max": "-1"}
+      ]
+    }
+  }
+}
+
+## JFR THREAD ANALYSIS
+{
+  "events": {
+    "jdk.JavaThreadStatistics": {
+      "row_count": 1,
+      "rows": [
+        {"activeCount": "23", "daemonCount": "19", "accumulatedCount": "29", "peakCount": "24"}
+      ]
+    }
+  }
+}
+
+## JFR EXCEPTION ANALYSIS
+{
+  "events": {
+    "jdk.ExceptionStatistics": {
+      "row_count": 2,
+      "rows": [
+        {"throwables": "java.lang.OutOfMemoryError", "count": "1"},
+        {"throwables": "java.lang.NullPointerException", "count": "3"}
+      ]
+    }
+  }
+}
+
+
+========== SYSTEM PROMPT ==========
+You are an expert Root Cause Analysis (RCA) engine specializing in Kubernetes pod memory issues. Analyze multiple data sources and provide comprehensive, evidence-based root cause analysis with confidence scoring and solution justification.
+
+========================================
+
+[38;5;251m2026-06-24 08:15:52,314[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LangChainPromptSender[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mSending prompt to LLM | provider="vertex-ai-anthropic", model="claude-sonnet-4-6"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:16:59,030[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LangChainPromptSender[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mPrompt sent successfully | model="claude-sonnet-4-6", inputTokens=4792, outputTokens=3352, cacheHit=false, cacheReadTokens=0, cacheCreationTokens=0, latencyMs=66715[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:16:59,031[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.cor.ser.imp.DiagnosticServiceImpl[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mLLM response received | alertId="app-1782288951949", modelUsed="claude-sonnet-4-6", inputTokens=4792, outputTokens=3352, latencyMs=66715[39m[38;5;203m[39m[38;5;229m
+[39m
+========== RAW LLM RESPONSE (Alert: app-1782288951949) ==========
+{
+  "issue_title": "Unbounded Registry Growth Causing Memory Exhaustion and Container Crash",
+  "issue_description": "The application is running out of memory because it keeps adding large numbers of items to an internal list that never stops growing. This causes the program to consume all available memory and crash repeatedly. The system has detected an out-of-memory error and the application has been restarting automatically. The memory allocated to this application is insufficient for the workload it is handling.",
+  "technical_description": "The container heap-oom-prom is experiencing critical memory exhaustion due to unbounded growth of an internal target registry within the DiscoveryScheduler component. Prometheus metrics captured at alert time show memory usage at 478/512 MiB (93.4% of the 512 MiB limit), placing the pod firmly in the danger zone for OOM termination. JFR container analysis confirms the cgroup memory limit is 536870912 bytes (512 MiB), consistent with the metrics. Application logs show the registry growing continuously from 95,000 to 115,000 entries in 25 seconds (5,000 entries per 5-second interval), indicating a runaway allocation pattern with no eviction or bounding mechanism. JFR exception analysis records a java.lang.OutOfMemoryError (count: 1), confirming heap exhaustion occurred. JFR GC analysis reveals a DefNew (Serial GC) collection triggered by 'Allocation Failure' with a pause of 3,292,885 microseconds (~3.29 seconds), indicating the JVM was unable to reclaim sufficient heap space. The Tenured Generation is at 17,271,584 bytes committed against a max of 286,654,464 bytes in the JFR snapshot, but given the 93.4% overall memory pressure at alert time, the heap state captured in JFR reflects an earlier, less saturated moment. Kubernetes events show a BackOff warning at 08:51:11 UTC for container heap-oom-prom, confirming the container has crashed and the kubelet is applying restart back-off. Kruize recommendations indicate that memory limits should be increased to 948 MiB (+436 MiB) and requests to 948 MiB (+692 MiB), corroborating that the current allocation is severely undersized for this workload.",
+  "anomaly_type": "POSSIBLE_OOM_KILLED",
+  "root_cause": "The root cause is an unbounded in-memory target registry in the DiscoveryScheduler that grows without any cap or eviction policy, inserting 5,000 entries every 5 seconds as observed in application logs (95,000 → 115,000 targets in 25 seconds). This continuous allocation exhausts the 512 MiB container memory limit, evidenced by Prometheus metrics showing 478/512 MiB (93.4%) at alert time and a confirmed java.lang.OutOfMemoryError in JFR exception data. When the heap is exhausted, the JVM triggers Serial GC (DefNew) due to 'Allocation Failure', but GC cannot reclaim enough memory since most objects are long-lived registry entries held in Tenured Generation, resulting in a 3.29-second stop-the-world pause. The container subsequently crashes, triggering the BackOff warning event observed at 08:51:11 UTC, and the cycle repeats on restart because the registry growth resumes immediately. No OOMKilled event is explicitly present in the provided Kubernetes events (only BackOff is recorded), but the combination of OutOfMemoryError, 93.4% memory saturation, and BackOff strongly indicates the container is being OOM-killed between event capture windows.",
+  "supporting_logs": [
+    "2026-06-18 09:17:08,004 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 95000 targets. Current registry size=95000",
+    "2026-06-18 09:17:13,005 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 100000 targets. Current registry size=100000",
+    "2026-06-18 09:17:18,006 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 105000 targets. Current registry size=105000",
+    "2026-06-18 09:17:23,007 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 110000 targets. Current registry size=110000",
+    "2026-06-18 09:17:28,008 INFO [ai.causa.scheduler.DiscoveryScheduler] (executor-thread-1) Inserted 115000 targets. Current registry size=115000"
+  ],
+  "evidences": [
+    "Prometheus memory metric: 478/512 MiB consumed = 93.4% of container memory limit at alert time, exceeding the 90% POSSIBLE_OOM_KILLED threshold",
+    "Kubernetes Warning event at 2026-06-18 08:51:11 UTC: BackOff - Back-off restarting failed container heap-oom-prom in pod heap-oom-prom-5785ff66b9-pt87l_chaos-test, confirming container crash and restart cycle",
+    "JFR ExceptionStatistics: java.lang.OutOfMemoryError count=1 recorded in flight recording, confirming heap exhaustion occurred within the profiled window",
+    "JFR GarbageCollection event: DefNew (Serial GC) triggered by 'Allocation Failure' with duration and longestPause both at 3,292,885 microseconds (~3.29 seconds stop-the-world pause), indicating GC unable to reclaim sufficient memory",
+    "JFR ContainerConfiguration: memoryLimit=536870912 bytes (512 MiB) against hostTotalMemory=65,993,228,288 bytes, confirming the container is severely memory-constrained relative to host capacity",
+    "JFR GCHeapMemoryPoolUsage: Tenured Gen used=17,271,584 bytes committed=286,654,464 bytes max=286,654,464 bytes; GC snapshot shows long-lived objects accumulating in old generation consistent with growing registry holding references",
+    "Application log growth rate: registry grew from 95,000 to 115,000 entries in 25 seconds (2026-06-18 09:17:08 to 09:17:28), inserting 5,000 entries per 5-second interval with no observed eviction",
+    "Kruize recommendations: memory limit should be 948 MiB (+436 MiB above current 512 MiB limit), memory request should be 948 MiB (+692 MiB above current ~256 MiB request), indicating persistent and severe under-provisioning for this workload"
+  ],
+  "possible_solutions": [
+    {
+      "solution": "Implement a bounded registry with a maximum size cap and eviction policy (e.g., LRU or TTL-based eviction) in the DiscoveryScheduler component to prevent unbounded memory growth",
+      "justification": "The root cause is the registry growing without any upper bound, as directly evidenced by logs showing continuous insertion from 95,000 to 115,000+ entries with no removals. Bounding the registry eliminates the source of unbounded heap allocation that drives the OutOfMemoryError and Serial GC Allocation Failure events. This addresses the root cause rather than merely masking it with more memory.",
+      "success_probability": "High",
+      "implementation_notes": "Introduce a configurable MAX_REGISTRY_SIZE constant in DiscoveryScheduler. Use a LinkedHashMap with access-order eviction or a Caffeine/Guava cache with size and TTL limits. Monitor registry size via a Prometheus gauge metric. Set an initial cap at 50,000-100,000 entries and tune based on legitimate workload requirements. Alert if eviction rate exceeds a threshold, indicating the cap may need adjustment."
+    },
+    {
+      "solution": "Increase container memory limit to at least 948 MiB as recommended by Kruize, and set memory request to 948 MiB to guarantee resource allocation",
+      "justification": "Kruize performance recommendations explicitly advise increasing memory limits to 948 MiB (+436 MiB) and requests to 948 MiB (+692 MiB) based on observed usage patterns. While this does not fix the unbounded registry growth, it provides sufficient headroom to prevent immediate OOM crashes while the application-level fix is developed and deployed. Current 512 MiB limit is 93.4% saturated at alert time, leaving only ~34 MiB margin before OOM termination.",
+      "success_probability": "Medium",
+      "implementation_notes": "Update the Deployment resource spec to set resources.limits.memory=948Mi and resources.requests.memory=948Mi. This is a short-term mitigation only — without fixing the unbounded growth in DiscoveryScheduler, the registry will eventually exhaust 948 MiB as well. After increasing limits, monitor memory growth rate to estimate time-to-exhaustion and use that window to prioritize the code-level fix. Also consider switching from Serial GC (DefNew) to G1GC to reduce stop-the-world pause durations."
+    },
+    {
+      "solution": "Replace the Serial GC (DefNew) collector with G1GC and tune heap settings to reduce stop-the-world pauses and improve memory reclamation efficiency",
+      "justification": "JFR GC analysis shows DefNew (Serial GC) with a 3.29-second stop-the-world pause caused by Allocation Failure, which is extremely disruptive for a service application. Serial GC is single-threaded and inappropriate for workloads with large heaps and concurrent allocation pressure. JFR ContainerConfiguration shows effectiveCpuCount=1, but even with one CPU, G1GC provides shorter, more predictable pause times and better handles promotion of short-lived objects, reducing the likelihood of Tenured Gen overflow. This is a long-term stability improvement that complements the registry bounding fix.",
+      "success_probability": "Medium",
+      "implementation_notes": "Add JVM flags: -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 to the container's JAVA_OPTS or JVM_ARGS environment variable. Also set -Xmx and -Xms explicitly to ~80% of the container memory limit (e.g., -Xmx760m -Xms256m if limit is raised to 948Mi) to prevent JVM from attempting to use more memory than the cgroup allows. Monitor GC pause times via JFR or Prometheus JVM metrics after the change. Validate with Cryostat that GC event durations decrease from the observed 3.29-second baseline."
+    }
+  ],
+  "llm_confidence_score_for_rca": 0.82,
+  "llm_confidence_score_for_solution": 0.78,
+  "confidence_summary": "Confidence in RCA is high (0.82) because multiple independent signals converge on the same diagnosis: application logs provide direct, timestamped evidence of unbounded registry growth; Prometheus metrics confirm 93.4% memory saturation at alert time; JFR exception analysis records a java.lang.OutOfMemoryError; JFR GC data confirms Allocation Failure with a 3.29-second pause; and Kubernetes events show container crash with BackOff. The primary gap reducing confidence from near-certain is the absence of an explicit OOMKilled event or exit code 137 in the provided Kubernetes events — only BackOff is recorded, which could theoretically indicate a non-OOM crash, though all other signals point to OOM. Solution confidence is slightly lower (0.78) because the registry bounding solution requires code-level changes whose effectiveness depends on understanding legitimate workload patterns not fully visible in the provided signals, and the memory increase recommendation alone is known to be a temporary mitigation rather than a permanent fix.",
+  "llm_notes": "Analysis began by reviewing all five signal categories simultaneously. The first striking observation was the application logs showing mechanical, linear registry growth at a fixed rate of 5,000 entries per 5-second tick — this is a textbook unbounded data structure accumulation pattern. Prometheus metrics at 93.4% memory consumption immediately flagged this as a POSSIBLE_OOM_KILLED candidate. I then cross-referenced JFR data: the ContainerConfiguration confirmed the 512 MiB cgroup limit, ExceptionStatistics confirmed OutOfMemoryError count=1, and GCAnalysis showed DefNew/Allocation Failure with a devastating 3.29-second pause — all corroborating the memory exhaustion narrative. The BackOff Kubernetes event confirmed the container has crashed at least once. The categorization decision between OOM_KILLED and POSSIBLE_OOM_KILLED was the key ambiguity: explicit OOMKilled events or exit code 137 are absent from the provided events list, and the BackOff event alone does not definitively prove OOM kill (it could be a JVM crash from OutOfMemoryError before the kernel OOM killer acted, or the event list may be incomplete). I selected POSSIBLE_OOM_KILLED as the more conservative and accurate classification given the missing explicit OOMKilled event. The JFR GC heap summary showing heapUsed of only 17-21 MB appears inconsistent with 93.4% overall memory usage, which I interpreted as the JFR recording being from an earlier time window before peak saturation — this is supported by the 'RECENT_ARCHIVED_EXISTS' status indicating the JFR data is from a prior recording, not real-time. Kruize recommendations added strong independent corroboration that the pod is persistently undersized. I considered the alternative theory that this is purely a misconfiguration (wrong memory limits) without a code bug, but the log evidence of indefinite registry growth makes the unbounded data structure the primary cause."
+}
+========================================
+
+
+========== PARSED RCA OUTPUT ==========
+Alert ID: app-1782288951949
+Issue Title: Unbounded Registry Growth Causing Memory Exhaustion and Container Crash
+Anomaly Type: POSSIBLE_OOM_KILLED
+Root Cause: The root cause is an unbounded in-memory target registry in the DiscoveryScheduler that grows without any cap or eviction policy, inserting 5,000 entries every 5 seconds as observed in application logs (95,000 → 115,000 targets in 25 seconds). This continuous allocation exhausts the 512 MiB container memory limit, evidenced by Prometheus metrics showing 478/512 MiB (93.4%) at alert time and a confirmed java.lang.OutOfMemoryError in JFR exception data. When the heap is exhausted, the JVM triggers Serial GC (DefNew) due to 'Allocation Failure', but GC cannot reclaim enough memory since most objects are long-lived registry entries held in Tenured Generation, resulting in a 3.29-second stop-the-world pause. The container subsequently crashes, triggering the BackOff warning event observed at 08:51:11 UTC, and the cycle repeats on restart because the registry growth resumes immediately. No OOMKilled event is explicitly present in the provided Kubernetes events (only BackOff is recorded), but the combination of OutOfMemoryError, 93.4% memory saturation, and BackOff strongly indicates the container is being OOM-killed between event capture windows.
+RCA Confidence: 0.82
+Solution Confidence: 0.78
+Number of Solutions: 3
+Solutions:
+  1. Implement a bounded registry with a maximum size cap and eviction policy (e.g., LRU or TTL-based eviction) in the DiscoveryScheduler component to prevent unbounded memory growth (Probability: HIGH)
+  2. Increase container memory limit to at least 948 MiB as recommended by Kruize, and set memory request to 948 MiB to guarantee resource allocation (Probability: MEDIUM)
+  3. Replace the Serial GC (DefNew) collector with G1GC and tune heap settings to reduce stop-the-world pauses and improve memory reclamation efficiency (Probability: MEDIUM)
+========================================
+
+[38;5;251m2026-06-24 08:16:59,050[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.cor.ser.imp.DiagnosticServiceImpl[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mRCA generated successfully | alertId="app-1782288951949", anomalyType=POSSIBLE_OOM_KILLED, rcaConfidence=0.82, solutionConfidence=0.78[39m[38;5;203m[39m[38;5;229m
+[39m[35m[Hibernate][0m 
+    [34mupdate[0m
+        alerts ae1_0 
+    [34mset[0m
+        has_diagnostics=? 
+    [34mwhere[0m
+        ae1_0.alert_id=?
+[38;5;251m2026-06-24 08:16:59,397[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.api.con.AlertWebhookController[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert webhook processed successfully | totalReceived=1, totalAccepted=1, totalFiltered=0, diagnosticsTriggered=1, status="accepted"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:18:18,120[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.api.con.AlertWebhookController[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert webhook received | alertCount=1, status=null, receiver=null, rawPayload=com.causa.api.dto.request.AlertWebhookRequest@4cc6aced[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:18:18,120[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.api.con.AlertWebhookController[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert webhook processed successfully | totalReceived=1, totalAccepted=0, totalFiltered=1, diagnosticsTriggered=0, status="rejected"[39m[38;5;203m[39m[38;5;229m
+[39mINFO exec -a "java" java -XX:MaxRAMPercentage=80.0 -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -XX:+ExitOnOutOfMemoryError -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -cp "." -jar /deployments/quarkus-run.jar 
+INFO running in /deployments
+==================================================
+   ██████╗  █████╗ ██╗   ██╗███████╗ █████╗
+  ██╔════╝ ██╔══██╗██║   ██║██╔════╝██╔══██╗
+  ██║      ███████║██║   ██║███████╗███████║
+  ██║      ██╔══██║██║   ██║╚════██║██╔══██║
+  ╚██████╗ ██║  ██║╚██████╔╝███████║██║  ██║
+   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
+
+   An Automated, Intelligent Diagnostic Agent
+==================================================
+                         Powered by Quarkus 3.36.1
+[38;5;251m2026-06-24 08:15:19,873[39m[38;5;251m [39m[38;5;222mWARN [39m[38;5;251m [[39m[38;5;153mcom.cau.com.uti.JsonUtils[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251m[38;5;231mFailed to parse JSON string to Map<String, String>: [38;5;253m}[38;5;231m. Returning empty map. Error: [38;5;253mUnexpected close marker '}': no open Object to close
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 1][38;5;231m[39m[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:20,153[39m[38;5;251m [39m[38;5;222mWARN [39m[38;5;251m [[39m[38;5;153mio.qua.config[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251m[38;5;231mThe "[38;5;253mquarkus.hibernate-orm.database.generation[38;5;231m" config property is deprecated and should not be used anymore.[39m[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:21,553[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LLMStartup[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mVerifying LLM connectivity | provider="vertex-ai-anthropic", model="claude-sonnet-4-6"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:21,554[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LangChainPromptSender[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mSending prompt to LLM | provider="vertex-ai-anthropic", model="claude-sonnet-4-6"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:21,556[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.ChatModelFactory[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mInitializing LLM chat model factory | provider="vertex-ai-anthropic"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:21,557[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.ChatModelFactory[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mLLM provider detected | provider="vertex-ai-anthropic", authType="ADC", model="claude-sonnet-4-6", vertexProjectId="itpc-gcp-cp-pe-eng-claude", vertexLocation="us-east5", temperature=0.1, maxTokens=8192[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:22,033[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.cor.ser.imp.AlertServiceImpl[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert service initialized | minimumSeverity="critical", cooldownMinutes=15, ignoredNamespaces=[kube-system, istio-system][39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:22,556[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mio.grp.net.sha.io.grp.net.TcpMetrics[39m[38;5;251m] ([39m[38;5;250mgrpc-default-executor-0[39m[38;5;251m) [39m[38;5;251mEpoll available during static init of TcpMetrics:true[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,238[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LangChainPromptSender[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mPrompt sent successfully | model="claude-sonnet-4-6", inputTokens=11, outputTokens=4, cacheHit=false, cacheReadTokens=0, cacheCreationTokens=0, latencyMs=2683[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,238[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LLMStartup[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mLLM connectivity verified | provider="vertex-ai-anthropic", model="claude-sonnet-4-6", latencyMs=2683[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,239[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LLMStartup[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mLLM ready | provider="vertex-ai-anthropic", model="claude-sonnet-4-6", authType="NOT_SET", temperature=0.1, maxTokens=8192, timeoutSeconds=60[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,239[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.inf.per.DatabaseConnectionService[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mVerifying database connection on startup | database="agroal"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,240[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.inf.per.DatabaseConnectionService[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mDatabase connection pool initialized successfully | dbKind="postgresql", pool="agroal"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,345[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mio.quarkus[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251m[38;5;231m[38;5;253mcausa-backend 0.0.1[38;5;231m [38;5;253mon JVM[38;5;231m (powered by Quarkus [38;5;253m3.36.1[38;5;231m) started in [38;5;253m6.616[38;5;231ms. [38;5;253mListening on: http://0.0.0.0:8080[38;5;231m[39m[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,345[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mio.quarkus[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251m[38;5;231mProfile[38;5;253m[38;5;231m [38;5;253mprod[38;5;231m activated. [38;5;253m[38;5;231m[39m[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,345[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mio.quarkus[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251m[38;5;231mInstalled features: [[38;5;253magroal, cdi, config-yaml, hibernate-orm, hibernate-orm-panache, hibernate-validator, jdbc-postgresql, narayana-jta, rest, rest-jackson, scheduler, smallrye-context-propagation, smallrye-health, smallrye-openapi, vertx[38;5;231m][39m[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:16:54,318[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.api.con.AlertWebhookController[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert webhook received | alertCount=1, status=null, receiver=null, rawPayload=com.causa.api.dto.request.AlertWebhookRequest@4745533c[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:16:54,320[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.api.con.AlertWebhookController[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert webhook processed successfully | totalReceived=1, totalAccepted=0, totalFiltered=1, diagnosticsTriggered=0, status="rejected"[39m[38;5;203m[39m[38;5;229m
+[39m

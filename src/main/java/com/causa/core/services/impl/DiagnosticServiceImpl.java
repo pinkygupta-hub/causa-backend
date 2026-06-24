@@ -137,9 +137,31 @@ public class DiagnosticServiceImpl implements DiagnosticService {
      * @return test context string loaded from resource file
      */
     private String buildTestContext(Alert alert) {
-        try (InputStream is = getClass().getResourceAsStream("/test-contexts/heap-oom-scenario.txt")) {
+        // Determine which test context to load based on alert name
+        String testFile = "/test-contexts/t1-context.txt"; // Default to T1 (all signals)
+
+        String alertName = alert.getAlertName();
+        if (alertName != null) {
+            // Check for T14 (GC case)
+            if (alertName.contains("T14") || alertName.contains("t14") ||
+                alertName.contains("GC") || alertName.contains("gc")) {
+                testFile = "/test-contexts/t14-context.txt";
+            } else {
+                // Check if alert name contains T1-T9
+                for (int i = 1; i <= 9; i++) {
+                    if (alertName.contains("T" + i) || alertName.contains("t" + i)) {
+                        testFile = "/test-contexts/t" + i + "-context.txt";
+                        break;
+                    }
+                }
+            }
+        }
+
+        System.out.println("DEBUG: Loading test context: " + testFile + " for alert: " + alertName);
+
+        try (InputStream is = getClass().getResourceAsStream(testFile)) {
             if (is == null) {
-                throw new RuntimeException("Test context file not found: /test-contexts/heap-oom-scenario.txt");
+                throw new RuntimeException("Test context file not found: " + testFile);
             }
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {

@@ -1,0 +1,120 @@
+## POD STATUS
+Pod: heap-oom-prom-5785ff66b9-pt87l
+Namespace: chaos-test
+Status: Running
+
+## PROMETHEUS METRICS
+CPU Usage: 0.371/0.500 cores
+MEMORY Usage: 478/512 MiB
+Collected at time of alert.
+
+## KRUIZE RECOMMENDATIONS
+Performance Recommendations:
+  resources:
+    requests:
+      cpu: 0.435 # +0.185
+      memory: 948 Mi # +692 Mi
+    limits:
+      cpu: 0.435 # -0.065
+      memory: 948 Mi # +436 Mi
+
+## JFR CONTAINER ANALYSIS
+{
+  "status": "RECENT_ARCHIVED_EXISTS",
+  "events": {
+    "jdk.ContainerConfiguration": {
+      "row_count": 1,
+      "rows": [{
+        "containerType": "cgroupv2",
+        "cpuQuota": "50000000",
+        "effectiveCpuCount": "1",
+        "memoryLimit": "536870912",
+        "hostTotalMemory": "65993228288"
+      }]
+    }
+  }
+}
+
+## JFR GC ANALYSIS
+{
+  "events": {
+    "jdk.GCHeapSummary": {
+      "row_count": 2,
+      "rows": [
+        {"heapUsed": "26512152", "when": "Before GC"},
+        {"heapUsed": "19253536", "when": "After GC"}
+      ]
+    },
+    "jdk.GCHeapMemoryPoolUsage": {
+      "row_count": 6,
+      "rows": [
+        {"name": "Eden Space", "used": "4088760", "committed": "8257536", "max": "114688000"},
+        {"name": "Survivor Space", "used": "983032", "committed": "983040", "max": "14286848"},
+        {"name": "Tenured Gen", "used": "17271584", "committed": "20357120", "max": "286654464"},
+        {"name": "Eden Space", "used": "4969840", "committed": "8257536", "max": "114688000"},
+        {"name": "Survivor Space", "used": "983040", "committed": "983040", "max": "14286848"},
+        {"name": "Tenured Gen", "used": "18270496", "committed": "20357120", "max": "286654464"}
+      ]
+    },
+    "jdk.GarbageCollection": {
+      "row_count": 1,
+      "rows": [
+        {"name": "DefNew", "duration": "3292885", "cause": "Allocation Failure", "longestPause": "3292885"}
+      ]
+    }
+  }
+}
+
+## JFR MEMORY ANALYSIS
+{
+  "events": {
+    "jdk.JavaMemoryUsage": {
+      "row_count": 2,
+      "rows": [
+        {"memoryType": "Heap", "used": "22343376", "committed": "29597696", "max": "415629312"},
+        {"memoryType": "Heap", "used": "24223376", "committed": "29597696", "max": "415629312"}
+      ]
+    }
+  }
+}
+
+## JFR THREAD ANALYSIS
+{
+  "events": {
+    "jdk.JavaThreadStatistics": {
+      "row_count": 7,
+      "rows": [
+        {"activeCount": "24", "daemonCount": "19", "accumulatedCount": "25", "peakCount": "24"},
+        {"activeCount": "24", "daemonCount": "19", "accumulatedCount": "25", "peakCount": "24"},
+        {"activeCount": "24", "daemonCount": "19", "accumulatedCount": "25", "peakCount": "24"},
+        {"activeCount": "24", "daemonCount": "19", "accumulatedCount": "25", "peakCount": "24"},
+        {"activeCount": "24", "daemonCount": "19", "accumulatedCount": "25", "peakCount": "24"},
+        {"activeCount": "24", "daemonCount": "19", "accumulatedCount": "25", "peakCount": "24"},
+        {"activeCount": "24", "daemonCount": "19", "accumulatedCount": "25", "peakCount": "24"}
+      ]
+    },
+    "jdk.ThreadPark": {
+      "row_count": 15,
+      "rows": [
+        {"duration": "999639113", "eventThread": "{quarkus-scheduler-trigger-check-1, 22}"},
+        {"duration": "996806967", "eventThread": "{executor-thread-1, 17}"},
+        {"duration": "999590481", "eventThread": "{quarkus-scheduler-trigger-check-1, 22}"}
+      ]
+    }
+  }
+}
+
+## JFR EXCEPTION ANALYSIS
+{
+  "events": {
+    "jdk.ExceptionStatistics": {
+      "row_count": 4,
+      "rows": [
+        {"throwables": "18"},
+        {"throwables": "18"},
+        {"throwables": "18"},
+        {"throwables": "18"}
+      ]
+    }
+  }
+}

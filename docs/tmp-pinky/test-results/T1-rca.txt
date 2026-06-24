@@ -1,0 +1,51 @@
+========== PARSED RCA OUTPUT ==========
+Alert ID: app-1782288951949
+Issue Title: Unbounded Registry Growth Causing Memory Exhaustion and Container Crash
+Anomaly Type: POSSIBLE_OOM_KILLED
+Root Cause: The root cause is an unbounded in-memory target registry in the DiscoveryScheduler that grows without any cap or eviction policy, inserting 5,000 entries every 5 seconds as observed in application logs (95,000 → 115,000 targets in 25 seconds). This continuous allocation exhausts the 512 MiB container memory limit, evidenced by Prometheus metrics showing 478/512 MiB (93.4%) at alert time and a confirmed java.lang.OutOfMemoryError in JFR exception data. When the heap is exhausted, the JVM triggers Serial GC (DefNew) due to 'Allocation Failure', but GC cannot reclaim enough memory since most objects are long-lived registry entries held in Tenured Generation, resulting in a 3.29-second stop-the-world pause. The container subsequently crashes, triggering the BackOff warning event observed at 08:51:11 UTC, and the cycle repeats on restart because the registry growth resumes immediately. No OOMKilled event is explicitly present in the provided Kubernetes events (only BackOff is recorded), but the combination of OutOfMemoryError, 93.4% memory saturation, and BackOff strongly indicates the container is being OOM-killed between event capture windows.
+RCA Confidence: 0.82
+Solution Confidence: 0.78
+Number of Solutions: 3
+Solutions:
+  1. Implement a bounded registry with a maximum size cap and eviction policy (e.g., LRU or TTL-based eviction) in the DiscoveryScheduler component to prevent unbounded memory growth (Probability: HIGH)
+  2. Increase container memory limit to at least 948 MiB as recommended by Kruize, and set memory request to 948 MiB to guarantee resource allocation (Probability: MEDIUM)
+  3. Replace the Serial GC (DefNew) collector with G1GC and tune heap settings to reduce stop-the-world pauses and improve memory reclamation efficiency (Probability: MEDIUM)
+========================================
+
+[38;5;251m2026-06-24 08:16:59,050[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.cor.ser.imp.DiagnosticServiceImpl[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mRCA generated successfully | alertId="app-1782288951949", anomalyType=POSSIBLE_OOM_KILLED, rcaConfidence=0.82, solutionConfidence=0.78[39m[38;5;203m[39m[38;5;229m
+[39m[35m[Hibernate][0m 
+    [34mupdate[0m
+        alerts ae1_0 
+    [34mset[0m
+        has_diagnostics=? 
+    [34mwhere[0m
+        ae1_0.alert_id=?
+[38;5;251m2026-06-24 08:16:59,397[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.api.con.AlertWebhookController[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert webhook processed successfully | totalReceived=1, totalAccepted=1, totalFiltered=0, diagnosticsTriggered=1, status="accepted"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:18:18,120[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.api.con.AlertWebhookController[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert webhook received | alertCount=1, status=null, receiver=null, rawPayload=com.causa.api.dto.request.AlertWebhookRequest@4cc6aced[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:18:18,120[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.api.con.AlertWebhookController[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert webhook processed successfully | totalReceived=1, totalAccepted=0, totalFiltered=1, diagnosticsTriggered=0, status="rejected"[39m[38;5;203m[39m[38;5;229m
+[39mINFO exec -a "java" java -XX:MaxRAMPercentage=80.0 -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -XX:+ExitOnOutOfMemoryError -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -cp "." -jar /deployments/quarkus-run.jar 
+INFO running in /deployments
+==================================================
+   ██████╗  █████╗ ██╗   ██╗███████╗ █████╗
+  ██╔════╝ ██╔══██╗██║   ██║██╔════╝██╔══██╗
+  ██║      ███████║██║   ██║███████╗███████║
+  ██║      ██╔══██║██║   ██║╚════██║██╔══██║
+  ╚██████╗ ██║  ██║╚██████╔╝███████║██║  ██║
+   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
+
+   An Automated, Intelligent Diagnostic Agent
+==================================================
+                         Powered by Quarkus 3.36.1
+[38;5;251m2026-06-24 08:15:19,873[39m[38;5;251m [39m[38;5;222mWARN [39m[38;5;251m [[39m[38;5;153mcom.cau.com.uti.JsonUtils[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251m[38;5;231mFailed to parse JSON string to Map<String, String>: [38;5;253m}[38;5;231m. Returning empty map. Error: [38;5;253mUnexpected close marker '}': no open Object to close
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 1][38;5;231m[39m[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:20,153[39m[38;5;251m [39m[38;5;222mWARN [39m[38;5;251m [[39m[38;5;153mio.qua.config[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251m[38;5;231mThe "[38;5;253mquarkus.hibernate-orm.database.generation[38;5;231m" config property is deprecated and should not be used anymore.[39m[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:21,553[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LLMStartup[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mVerifying LLM connectivity | provider="vertex-ai-anthropic", model="claude-sonnet-4-6"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:21,554[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LangChainPromptSender[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mSending prompt to LLM | provider="vertex-ai-anthropic", model="claude-sonnet-4-6"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:21,556[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.ChatModelFactory[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mInitializing LLM chat model factory | provider="vertex-ai-anthropic"[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:21,557[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.ChatModelFactory[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mLLM provider detected | provider="vertex-ai-anthropic", authType="ADC", model="claude-sonnet-4-6", vertexProjectId="itpc-gcp-cp-pe-eng-claude", vertexLocation="us-east5", temperature=0.1, maxTokens=8192[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:22,033[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.cor.ser.imp.AlertServiceImpl[39m[38;5;251m] ([39m[38;5;250mexecutor-thread-1[39m[38;5;251m) [39m[38;5;251mAlert service initialized | minimumSeverity="critical", cooldownMinutes=15, ignoredNamespaces=[kube-system, istio-system][39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:22,556[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mio.grp.net.sha.io.grp.net.TcpMetrics[39m[38;5;251m] ([39m[38;5;250mgrpc-default-executor-0[39m[38;5;251m) [39m[38;5;251mEpoll available during static init of TcpMetrics:true[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,238[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LangChainPromptSender[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mPrompt sent successfully | model="claude-sonnet-4-6", inputTokens=11, outputTokens=4, cacheHit=false, cacheReadTokens=0, cacheCreationTokens=0, latencyMs=2683[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,238[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LLMStartup[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mLLM connectivity verified | provider="vertex-ai-anthropic", model="claude-sonnet-4-6", latencyMs=2683[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,239[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.llm.LLMStartup[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mLLM ready | provider="vertex-ai-anthropic", model="claude-sonnet-4-6", authType="NOT_SET", temperature=0.1, maxTokens=8192, timeoutSeconds=60[39m[38;5;203m[39m[38;5;229m
+[39m[38;5;251m2026-06-24 08:15:24,239[39m[38;5;251m [39m[38;5;192mINFO [39m[38;5;251m [[39m[38;5;153mcom.cau.inf.per.DatabaseConnectionService[39m[38;5;251m] ([39m[38;5;250mmain[39m[38;5;251m) [39m[38;5;251mVerifying database connection on startup | database="agroal"[39m[38;5;203m[39m[38;5;229m
