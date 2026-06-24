@@ -1,5 +1,6 @@
 package com.causa.core.services;
 
+import com.causa.common.constants.LLMConstants;
 import com.causa.config.LLMConfig;
 import com.causa.core.domain.Alert;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -48,12 +49,13 @@ public class RcaPromptBuilder {
     }
 
     /**
-     * Builds the complete RCA prompt with alert details and MCP context.
+     * Builds the complete RCA prompt with MCP context.
      *
-     * <p>Loads model-specific prompt template from YAML and renders it with alert data.
+     * <p>Loads model-specific prompt template from YAML and renders it with context data.
+     * Alert details are embedded in the MCP context, not passed separately.
      *
-     * @param alert the alert to analyze
-     * @param mcpContext the collected MCP context as a string
+     * @param alert the alert to analyze (unused, kept for API compatibility)
+     * @param mcpContext the collected MCP context as a string (includes all signal data)
      * @return the complete RCA prompt
      */
     public String buildPrompt(Alert alert, String mcpContext) {
@@ -63,15 +65,8 @@ public class RcaPromptBuilder {
         // Load appropriate template
         PromptTemplateLoader.PromptTemplate template = templateLoader.loadTemplate(modelType.getTemplateName());
 
-        // Render the prompt with alert details
-        return template.render(
-            alert.getAlertName(),
-            alert.getSeverity(),
-            alert.getPodName(),
-            alert.getNamespace(),
-            alert.getContainerName(),
-            mcpContext
-        );
+        // Render the prompt with context (alert details already in context)
+        return template.render(mcpContext);
     }
 
     /**
@@ -94,17 +89,20 @@ public class RcaPromptBuilder {
      */
     private ModelType determineModelType(String provider, String modelName) {
         // Check for Bob/Granite models (IBM BAM)
-        if (modelName != null && (modelName.toLowerCase().contains("bob") ||
-            modelName.toLowerCase().contains("granite"))) {
-            return ModelType.BOB;
+        if (modelName != null) {
+            String lowerModelName = modelName.toLowerCase();
+            if (lowerModelName.contains(LLMConstants.ModelNames.BOB) ||
+                lowerModelName.contains(LLMConstants.ModelNames.GRANITE)) {
+                return ModelType.BOB;
+            }
         }
 
         // Check provider type
-        if ("vertex-ai-anthropic".equalsIgnoreCase(provider)) {
+        if (LLMConstants.Provider.VERTEX_AI_ANTHROPIC.equalsIgnoreCase(provider)) {
             return ModelType.VERTEX_AI_ANTHROPIC;
         }
 
-        if ("anthropic".equalsIgnoreCase(provider)) {
+        if (LLMConstants.Provider.ANTHROPIC.equalsIgnoreCase(provider)) {
             return ModelType.DIRECT_ANTHROPIC;
         }
 

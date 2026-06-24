@@ -1,5 +1,6 @@
 package com.causa.core.services;
 
+import com.causa.common.constants.PromptConstants;
 import com.causa.config.RcaConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,7 +26,9 @@ public class PromptTemplateLoader {
 
     @Inject
     public PromptTemplateLoader(RcaConfig rcaConfig) {
-        this.templatePath = rcaConfig.templatePath();
+        String configuredPath = rcaConfig.templatePath();
+        // Normalize path - ensure it has leading "/" for classloader resource lookup
+        this.templatePath = configuredPath.startsWith("/") ? configuredPath : "/" + configuredPath;
     }
 
     /**
@@ -46,7 +49,10 @@ public class PromptTemplateLoader {
     private PromptTemplate loadTemplateFromYaml(String modelType) {
         try (InputStream is = getClass().getResourceAsStream(templatePath)) {
             if (is == null) {
-                throw new IllegalStateException("Prompt template file not found: " + templatePath);
+                throw new IllegalStateException(
+                    String.format("Prompt template file not found at configured path: %s (resolved as: %s)",
+                        templatePath, getClass().getResource(templatePath))
+                );
             }
 
             Yaml yaml = new Yaml();
@@ -54,19 +60,22 @@ public class PromptTemplateLoader {
 
             Map<String, Object> modelTemplate = (Map<String, Object>) templates.get(modelType);
             if (modelTemplate == null) {
-                // Fallback to vertex-ai-anthropic if model-specific template not found
-                modelTemplate = (Map<String, Object>) templates.get("vertex-ai-anthropic");
+                // Fallback to default if model-specific template not found
+                modelTemplate = (Map<String, Object>) templates.get(PromptConstants.DEFAULT_MODEL_TYPE);
                 if (modelTemplate == null) {
-                    throw new IllegalStateException("Default prompt template (vertex-ai-anthropic) not found in " + templatePath);
+                    throw new IllegalStateException(
+                        String.format("Default prompt template (%s) not found in %s",
+                            PromptConstants.DEFAULT_MODEL_TYPE, templatePath)
+                    );
                 }
             }
 
             return new PromptTemplate(
-                (String) modelTemplate.get("name"),
-                (String) modelTemplate.get("version"),
-                (String) modelTemplate.get("description"),
-                (String) modelTemplate.get("system_prompt"),
-                (String) modelTemplate.get("user_prompt")
+                (String) modelTemplate.get(PromptConstants.KEY_NAME),
+                (String) modelTemplate.get(PromptConstants.KEY_VERSION),
+                (String) modelTemplate.get(PromptConstants.KEY_DESCRIPTION),
+                (String) modelTemplate.get(PromptConstants.KEY_SYSTEM_PROMPT),
+                (String) modelTemplate.get(PromptConstants.KEY_USER_PROMPT)
             );
 
         } catch (Exception e) {
@@ -85,25 +94,13 @@ public class PromptTemplateLoader {
         String userPrompt
     ) {
         /**
-         * Renders the user prompt by replacing placeholders with actual values.
+         * Renders the user prompt by replacing the context placeholder.
          *
-         * @param alertName     the alert name
-         * @param severity      the alert severity (will be converted to string)
-         * @param podName       the pod name
-         * @param namespace     the namespace
-         * @param containerName the container name
-         * @param context       the MCP context string
+         * @param context the MCP context string (includes all signal data)
          * @return the rendered prompt
          */
-        public String render(String alertName, Object severity, String podName,
-                             String namespace, String containerName, String context) {
-            return userPrompt
-                .replace("{{alertName}}", alertName)
-                .replace("{{severity}}", severity != null ? severity.toString() : "unknown")
-                .replace("{{podName}}", podName)
-                .replace("{{namespace}}", namespace)
-                .replace("{{containerName}}", containerName != null ? containerName : "N/A")
-                .replace("{{context}}", context);
+        public String render(String context) {
+            return userPrompt.replace(PromptConstants.PLACEHOLDER_CONTEXT, context);
         }
     }
 }

@@ -17,14 +17,6 @@ vertex-ai-anthropic:
 
     **Return ONLY valid JSON. Start with `{` and end with `}`. No markdown, no code blocks, no explanatory text outside the JSON structure.**
 
-    ## ALERT DETAILS
-
-    Alert Name: {{alertName}}
-    Alert Severity: {{severity}}
-    Pod Name: {{podName}}
-    Namespace: {{namespace}}
-    Container: {{containerName}}
-
     ## INPUT SIGNALS
 
     You will receive the following signals (some may be missing):
@@ -242,14 +234,6 @@ direct-anthropic:
 
     **Return ONLY valid JSON. Start with `{` and end with `}`. No markdown, no code blocks, no explanatory text outside the JSON structure.**
 
-    ## ALERT DETAILS
-
-    Alert Name: {{alertName}}
-    Alert Severity: {{severity}}
-    Pod Name: {{podName}}
-    Namespace: {{namespace}}
-    Container: {{containerName}}
-
     ## INPUT SIGNALS
 
     You will receive the following signals (some may be missing):
@@ -466,14 +450,6 @@ bob:
     ## OUTPUT REQUIREMENT
 
     **Return ONLY valid JSON. Start with `{` and end with `}`. No markdown, no code blocks, no explanatory text outside the JSON structure.**
-
-    ## ALERT DETAILS
-
-    Alert Name: {{alertName}}
-    Alert Severity: {{severity}}
-    Pod Name: {{podName}}
-    Namespace: {{namespace}}
-    Container: {{containerName}}
 
     ## INPUT SIGNALS
 
