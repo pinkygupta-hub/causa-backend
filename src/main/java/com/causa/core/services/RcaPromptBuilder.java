@@ -19,6 +19,25 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class RcaPromptBuilder {
 
+    /**
+     * Enum representing supported LLM model types for template selection.
+     */
+    public enum ModelType {
+        VERTEX_AI_ANTHROPIC("vertex-ai-anthropic"),
+        DIRECT_ANTHROPIC("direct-anthropic"),
+        BOB("bob");
+
+        private final String templateName;
+
+        ModelType(String templateName) {
+            this.templateName = templateName;
+        }
+
+        public String getTemplateName() {
+            return templateName;
+        }
+    }
+
     private final PromptTemplateLoader templateLoader;
     private final LLMConfig llmConfig;
 
@@ -39,10 +58,10 @@ public class RcaPromptBuilder {
      */
     public String buildPrompt(Alert alert, String mcpContext) {
         // Determine model type for template selection
-        String modelType = determineModelType(llmConfig.provider(), llmConfig.modelName());
+        ModelType modelType = determineModelType(llmConfig.provider(), llmConfig.modelName());
 
         // Load appropriate template
-        PromptTemplateLoader.PromptTemplate template = templateLoader.loadTemplate(modelType);
+        PromptTemplateLoader.PromptTemplate template = templateLoader.loadTemplate(modelType.getTemplateName());
 
         // Render the prompt with alert details
         return template.render(
@@ -61,8 +80,8 @@ public class RcaPromptBuilder {
      * @return the system prompt
      */
     public String getSystemPrompt() {
-        String modelType = determineModelType(llmConfig.provider(), llmConfig.modelName());
-        PromptTemplateLoader.PromptTemplate template = templateLoader.loadTemplate(modelType);
+        ModelType modelType = determineModelType(llmConfig.provider(), llmConfig.modelName());
+        PromptTemplateLoader.PromptTemplate template = templateLoader.loadTemplate(modelType.getTemplateName());
         return template.systemPrompt();
     }
 
@@ -71,21 +90,25 @@ public class RcaPromptBuilder {
      *
      * @param provider  the LLM provider
      * @param modelName the model name
-     * @return the template type (default, bob, ollama)
+     * @return the ModelType enum
      */
-    private String determineModelType(String provider, String modelName) {
-        // Check for Bob models (IBM BAM)
+    private ModelType determineModelType(String provider, String modelName) {
+        // Check for Bob/Granite models (IBM BAM)
         if (modelName != null && (modelName.toLowerCase().contains("bob") ||
             modelName.toLowerCase().contains("granite"))) {
-            return "bob";
+            return ModelType.BOB;
         }
 
-        // Check for Ollama
-        if ("ollama".equalsIgnoreCase(provider)) {
-            return "ollama";
+        // Check provider type
+        if ("vertex-ai-anthropic".equalsIgnoreCase(provider)) {
+            return ModelType.VERTEX_AI_ANTHROPIC;
         }
 
-        // Default for Claude, OpenAI, etc.
-        return "default";
+        if ("anthropic".equalsIgnoreCase(provider)) {
+            return ModelType.DIRECT_ANTHROPIC;
+        }
+
+        // Default to vertex-ai-anthropic
+        return ModelType.VERTEX_AI_ANTHROPIC;
     }
 }
