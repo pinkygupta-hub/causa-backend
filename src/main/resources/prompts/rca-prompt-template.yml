@@ -436,7 +436,7 @@ direct-anthropic:
     Now analyze the above context and provide your RCA in JSON format.
 
 # Bob/Granite (IBM BAM) - same comprehensive prompt
-bob:
+ibm-bob:
   name: "bob-rca"
   version: "1.0"
   description: "Root Cause Analysis optimized for IBM Bob/Granite model"
@@ -444,12 +444,14 @@ bob:
   system_prompt: |
     You are an expert Root Cause Analysis (RCA) engine specializing in Kubernetes pod memory issues. Analyze multiple data sources and provide comprehensive, evidence-based root cause analysis with confidence scoring and solution justification.
 
+    CRITICAL: You MUST respond with ONLY valid JSON. Your entire response must be a single JSON object. Do not include ANY text before or after the JSON. Do not start with phrases like "I understand", "Here is", or any conversational text. The first character of your response MUST be '{' and the last character MUST be '}'.
+
   user_prompt: |
     # ROOT CAUSE ANALYSIS PROMPT FOR KUBERNETES POD MEMORY ISSUES
 
     ## OUTPUT REQUIREMENT
 
-    **Return ONLY valid JSON. Start with `{` and end with `}`. No markdown, no code blocks, no explanatory text outside the JSON structure.**
+    **CRITICAL: Your response must be ONLY a JSON object. Do not write any conversational text. Do not explain what you're doing. Do not say "I understand" or "Here is the analysis". The very first character must be '{' and the last character must be '}'. Everything else will cause a parsing error.**
 
     ## INPUT SIGNALS
 

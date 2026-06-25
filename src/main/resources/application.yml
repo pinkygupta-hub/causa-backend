@@ -93,6 +93,10 @@ causa:
     vertex:
       project-id: ${VERTEX_PROJECT_ID:}
       location: ${VERTEX_LOCATION:us-east5}
+    bob:
+      shell-path: ${BOB_SHELL_PATH:bob}
+      api-key: ${LLM_API_KEY:}
+      timeout-seconds: ${BOB_TIMEOUT_SECONDS:180}
 
   # Alert Configuration
   alerts:
@@ -113,4 +117,13 @@ causa:
 #     validation-enabled: ${CAUSA_FEATURE_VALIDATION:true}
 #     notifications-enabled: ${CAUSA_FEATURE_NOTIFICATIONS:false}
 
+# ============================================================
+# Development Profile Configuration
+# ============================================================
+"%dev":
+  quarkus:
+    datasource:
+      # Dev-only password default to avoid build-time DataSource bean creation failure
+      # Production uses Kubernetes secrets via CAUSA_DB_PASSWORD env var
+      password: ${CAUSA_DB_PASSWORD:dev_password}
 
