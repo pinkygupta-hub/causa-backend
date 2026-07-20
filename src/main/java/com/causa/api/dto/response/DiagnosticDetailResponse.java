@@ -48,14 +48,8 @@ public record DiagnosticDetailResponse(
     @JsonProperty("llm_notes")
     String llmNotes,
 
-    @JsonProperty("validation_result")
-    String validationResult,
-
-    @JsonProperty("validation_score")
-    Double validationScore,
-
-    @JsonProperty("validation_summary")
-    String validationSummary
+    @JsonProperty("validation")
+    ValidationInfo validation
 ) {
 
     // -------------------------------------------------------------------------
@@ -120,6 +114,17 @@ public record DiagnosticDetailResponse(
 
         @JsonProperty("implementation_notes")
         String implementationNotes
+    ) {}
+
+    public record ValidationInfo(
+        @JsonProperty("result")
+        String result,
+
+        @JsonProperty("score")
+        Double score,
+
+        @JsonProperty("summary")
+        String summary
     ) {}
 
     // -------------------------------------------------------------------------
@@ -217,6 +222,13 @@ public record DiagnosticDetailResponse(
             }
         }
 
+        // Build validation info
+        ValidationInfo validationInfo = new ValidationInfo(
+            diagnostic.getValidationResult(),
+            validationScore,
+            validationSummary
+        );
+
         return new DiagnosticDetailResponse(
             diagnostic.getDiagnosticId(),
             diagnostic.getStatus() != null ? diagnostic.getStatus().getValue() : null,
@@ -228,9 +240,7 @@ public record DiagnosticDetailResponse(
             diagnosisInfo,
             recommendations,
             llmNotes,
-            diagnostic.getValidationResult(),
-            validationScore,
-            validationSummary
+            validationInfo
         );
     }
 
